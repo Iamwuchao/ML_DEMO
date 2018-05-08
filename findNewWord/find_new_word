@@ -1,0 +1,146 @@
+import codecs
+
+from db_util import read_traindata_iterator
+category_keys = [
+       "category1",
+        "category2",
+        "category3"
+        ]
+
+new_brand = set()
+new_category = set()
+new_nerstyle = set()
+
+parameters2_style = "nerstyle"
+parameters2_useless_keys = ["商品名称","商品编号","店铺","商品毛重","货号","价位","尺码","品牌","商品编码","ISBN","出版时间"]
+
+def __process_category(category):
+    result = []
+    category = "".join(category)
+    category = category.replace("、","/")
+    if "/" in category:
+        cates = category.split("/")
+        result.append(cates[0])
+        result.append(cates[1])
+    else:
+        result.append(category)
+    return result
+
+
+def __process_line(line):
+    if isinstance(line,dict):
+        key_str  = list(line.keys())[0]
+        vals = line[key_str]
+        if isinstance(vals,list):
+            vals = "，".join(vals)
+        line = key_str+"："+vals
+    str_list = line.split("：")
+    if str_list and len(str_list) >= 2:
+        key = str_list[0]
+        print("key "+key)
+        vals = str_list[1].strip()
+        #print("vals "+vals)
+        if vals:
+            vals = vals.split("，")
+            print("vals " + ",".join(vals))
+            return {"key":key,"vals":vals}
+        else:
+            return {"key":key}
+    else:
+        return None
+
+
+def process_parameters(parameters):
+    '''
+    处理parameters
+    :param parameters:
+    :return:
+    '''
+    parameters_word_set = set()
+    for line in parameters:
+        if line:
+            line_dict = __process_line(line)
+            if line_dict:
+                if line_dict["key"] in parameters2_useless_keys:
+                    print("&&&& "+line_dict["key"])
+                    continue
+                parameters_word_set.add(line_dict["key"])
+                if "vals" in line_dict:
+                    vals = line_dict["vals"]
+                    for val in vals:
+                        parameters_word_set.add(val)
+    return parameters_word_set
+
+def brand_process(brand):
+    '''
+    处理品牌
+    :param brand:
+    :return:
+    '''
+    brand = brand[0]
+    brands = []
+    if "（" in brand:#有中英两个品牌名
+        brand = brand.replace("）","")
+        vals = brand.split("（")
+        for val in vals:
+            brands.append(val.strip())
+        return brands
+    else:
+        brands.append(brand)
+        return brands
+
+
+
+def process_item(item):
+    global new_brand,new_category,new_nerstyle
+
+    #不包含图书类数据
+    if item["category1"] == "图书":
+        return
+    brand = item["brand"]
+    if brand:
+        brands = brand_process(brand)
+        for brand_tem in brands:
+            new_brand.add(brand_tem)
+    for key in category_keys:
+        if item[key]:
+            cates = __process_category(item[key])
+            for cate in cates:
+                if "（" not in cate:#对于形如China Interest（中国主题） 的词舍去
+                    new_category.add(cate)
+    parameters2 = item["parameters2"]
+    if parameters2:
+        parameters_word_set = process_parameters(parameters2)
+        if parameters_word_set:
+            for word in parameters_word_set:
+                if not word.isdigit() and len(word)<8:#纯数字的词舍去,限制词的长度小于8
+                    words = __process_category(word)#处理包含/字符的情况例如流水/屏风
+                    for tem in words:
+                        new_nerstyle.add(tem)
+
+
+def save_to_file(wordlist,dictPath,nertype):
+    with codecs.open( dictPath, "w","utf-8") as outfile:
+        for key in wordlist:
+            if key:
+                outfile.write(key+" "+nertype+"\n")
+
+
+def test():
+    global new_nerstyle,new_category,new_brand
+    read_iterator = read_traindata_iterator(1000,"parameter")
+    while read_iterator.has_next():
+        item = read_iterator.get_next()
+        print("*")
+        process_item(item)
+    save_to_file(wordlist=new_brand,dictPath="./new_brand.txt",nertype="nerbrand")
+    save_to_file(wordlist=new_category,dictPath="./new_category.txt",nertype="nercategory")
+    save_to_file(wordlist=new_nerstyle,dictPath="./new_nerstyle.txt",nertype="nerstyle")
+
+
+test()
+
+
+
+
+
