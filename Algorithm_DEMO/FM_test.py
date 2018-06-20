@@ -27,7 +27,7 @@ y_ = tf.placeholder(tf.float32,[None])
 batch = tf.placeholder(tf.int32)
 
 w2_new = tf.reshape(tf.tile(w2,[batch,1]),[-1,4,k])
-board_x = tf.reshape(tf.title(x_,[1,k]),[-1,4,k])
+board_x = tf.reshape(tf.tile(x_,[1,k]),[-1,4,k])
 board_x2 = tf.square(board_x)
 
 q = tf.square(tf.reduce_sum(tf.multiply(w2_new,board_x),axis=1))
@@ -43,6 +43,8 @@ accury = (batch_fl + tf.reduce_sum(tf.sign(tf.multiply(y_fm,y_))))/(batch_fl*2)
 train_op = tf.train.AdamOptimizer(learning_rate=0.1).minimize(cost)
 
 with tf.Session() as sess:
-    sess.run(train_op,feed_dict={x:x_train,y_:y_train,batch:70})
-    print(sess.run(cost, feed_dict={x_: x_train, y_: y_train, batch: 70}))
-print(sess.run(accury, feed_dict={x_: x_test, y_: y_test, batch: 30}))
+    sess.run(tf.initialize_all_variables())
+    for i in range(2000):
+        sess.run(train_op,feed_dict={x_:x_train,y_:y_train,batch:70})
+        print(sess.run(cost, feed_dict={x_: x_train, y_: y_train, batch: 70}))
+    print(sess.run(accury, feed_dict={x_: x_test, y_: y_test, batch: 30}))
