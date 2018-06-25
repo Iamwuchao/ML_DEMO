@@ -24,12 +24,16 @@ for index,row in train_X.iterrows():
 
 v = DictVectorizer()
 print(len(train_X_list))
-train_X_onehot =v.fit_transform(train_X_list)
+train_X_onehot =v.fit_transform(train_X_list).toarray()
+print("train_X_onehot")
+print(type(train_X_onehot))
 #train_X_onehot = np.array(train_X_onehot)
-print(train_X_onehot.shape)
+#print(train_X_onehot.shape)
 
-train_Y = data.loc[:,['Survived']]
+train_Y = data.loc[:,['Survived']].values
+print(type(train_Y))
 print(train_Y.shape)
+#print(train_Y.shape)
 #train_Y = np.array(train_Y)
 n_samples = train_X.shape[0]
 
@@ -41,11 +45,11 @@ w1 = tf.Variable(tf.truncated_normal([n]))
 w2 = tf.Variable(tf.truncated_normal([n,k]))
 
 x_ = tf.placeholder(tf.float32,[None,n])
-y_ = tf.placeholder(tf.float32,[None])
+y_ = tf.placeholder(tf.float32,[None,1])
 
 batch = tf.placeholder(tf.int32)
 
-w2_new = tf.reshape(tf.tile(w2,[batch,1]),[-1,n,k])
+w2_new = tf.reshape(tf.tile(w2,[891,1]),[-1,n,k])
 
 board_x = tf.reshape(tf.tile(x_,[1,k]),[-1,n,k])
 
@@ -63,15 +67,15 @@ y_fm = w0 + tf.reduce_sum(tf.multiply(x_,w1),axis=1) +\
 #tf.nn.sigmoid_cross_entropy_with_logits(labels=y_,logits=pred)#
 cost = tf.reduce_sum(0.5*tf.square(y_fm-y_))#tf.reduce_mean(-tf.reduce_sum(y_*tf.log(pred)))
 
-optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(cost)
 
-init = tf.initialize_all_variables()
+init = tf.global_variables_initializer()
 
 with tf.Session() as sess:
     sess.run(init)
-    for epoch in range(training_epochs):
+    for epoch in range(10):
         sess.run(optimizer, feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30})
-        print(sess.run(cost,feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30}))
+    print(sess.run(cost,feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30}))
     #print(sess.run(accury, feed_dict={x_: x_test, y_: y_test, batch: 30}))
 
 
