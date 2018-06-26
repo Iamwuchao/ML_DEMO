@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
-import tensorflow.python.debug as tf_debug
+from tensorflow.python import debug as tf_debug
+
 
 xs = np.linspace(-0.5,0.49,100)
 x = tf.placeholder(tf.float32,shape=[None],name='x')
