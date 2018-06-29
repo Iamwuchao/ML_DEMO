@@ -8,6 +8,7 @@ from sklearn.feature_extraction import DictVectorizer
 from tensorflow.python import debug as tfdbg
 import pandas as pd
 import xgboost as xgb
+import sklearn
 
 train_file = "train.csv"
 test_file = "test.csv"
@@ -28,34 +29,41 @@ display_step = 50
 n=159  #X的长度
 k=10  #FM 的超参
 
-data = process_data(train_file)
+data1 = process_data(train_file)
 
-train_X = data.loc[:,X_feature]
-print(train_X.shape)
-train_X_list = []
-for index,row in train_X.iterrows():
+data2 = process_data(test_file)
+
+data = np.concatenate((data1,data2),axis=0)
+
+X = data.loc[:,X_feature]
+print(X.shape)
+X_list = []
+for index,row in X.iterrows():
     new_dict_row = {}
     for key in X_feature:
         new_dict_row[key] = row[key]
-    train_X_list.append(new_dict_row)
+    X_list.append(new_dict_row)
 
 v = DictVectorizer()
-print(len(train_X_list))
-train_X_onehot =v.fit_transform(train_X_list).toarray()
-where_are_nan = np.isnan(train_X_onehot)
-train_X_onehot[where_are_nan] = 0
+print(len(X_list))
+X_onehot =v.fit_transform(X_list).toarray()
+where_are_nan = np.isnan(X_onehot)
+X_onehot[where_are_nan] = 0
 print("train_X_onehot")
-print(type(train_X_onehot))
+print(type(X_onehot))
 #train_X_onehot = np.array(train_X_onehot)
-#print(train_X_onehot.shape)
+print(X_onehot.shape)
 
 train_Y = data.loc[:,['Survived']].values
 
-dtrain = xgb.DMatrix(data==train_X_onehot,label=train_Y)
+print(type(train_Y))
+print(train_Y.shape)
+
+dtrain = xgb.DMatrix(data=train_X_onehot,label=train_Y)
 
 params={'booster':'gbtree',
-	    'objective': 'rank:pairwise',
-	    'eval_metric':'error',
+	    'objective': 'binary:logistic',
+	    'eval_metric':'logloss',
 	    'gamma':0.1,
 	    'min_child_weight':1.1,
 	    'max_depth':5,
@@ -72,8 +80,18 @@ params={'booster':'gbtree',
 
 num_round = 200
 bst = xgb.train(params, dtrain, num_boost_round=2000)
-preds = bst.predict(train_X_onehot)
+preds = bst.predict(xgb.DMatrix(train_X_onehot))
 print(type(preds))
+
+for p in preds:
+    print(p)
+
+#ppp = (preds.round()+1)%2
+
+
+acc_val = sklearn.metrics.accuracy_score(train_Y, preds.round())
+print("#######")
+print(acc_val)
 # print(type(train_Y))
 # print(train_Y.shape)
 # #print(train_Y.shape)
