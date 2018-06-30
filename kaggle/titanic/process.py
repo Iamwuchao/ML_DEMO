@@ -5,15 +5,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction import DictVectorizer
 #from titanic.process_data import *
-<<<<<<< HEAD
 from tensorflow.python import debug as tf_debug
 import pandas as pd
-=======
 from tensorflow.python import debug as tfdbg
 import pandas as pd
 import xgboost as xgb
 import sklearn
->>>>>>> be2a06a3d9cf015770d75d6ad6fca968186d6e93
 
 train_file = "train.csv"
 test_file = "test.csv"
@@ -26,10 +23,6 @@ def process_data(file):
     feature_df = df.loc[:,feature_list]
     #print(feature_df.shape)
     return feature_df
-<<<<<<< HEAD
-
-=======
->>>>>>> be2a06a3d9cf015770d75d6ad6fca968186d6e93
 
 X_feature = ['Pclass','Sex','Age','SibSp','Parch','Fare','Cabin','Embarked']
 learning_rate = 0.01
@@ -60,7 +53,7 @@ where_are_nan = np.isnan(X_onehot)
 X_onehot[where_are_nan] = 0
 print("train_X_onehot")
 print(type(X_onehot))
-#train_X_onehot = np.array(train_X_onehot)
+train_X_onehot = np.array(X_onehot)
 print(X_onehot.shape)
 
 train_Y = data.loc[:,['Survived']].values
@@ -68,15 +61,14 @@ train_Y = data.loc[:,['Survived']].values
 print(type(train_Y))
 print(train_Y.shape)
 
-<<<<<<< HEAD
-with tf.Session() as sess:
-    sess.run(init)
-    sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-    for epoch in range(10):
-        sess.run(optimizer, feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30})
-    print(sess.run(cost,feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30}))
-    #print(sess.run(accury, feed_dict={x_: x_test, y_: y_test, batch: 30}))
-=======
+# with tf.Session() as sess:
+#     sess.run(init)
+#     sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+#     for epoch in range(10):
+#         sess.run(optimizer, feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30})
+#     print(sess.run(cost,feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30}))
+#     #print(sess.run(accury, feed_dict={x_: x_test, y_: y_test, batch: 30}))
+
 dtrain = xgb.DMatrix(data=train_X_onehot,label=train_Y)
 
 params={'booster':'gbtree',
@@ -178,7 +170,7 @@ print(acc_val)
 #             end=start +100
 #         #print(sess.run(tf.Print(pred_new,[pred_new]),feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30}))
 #         #print(sess.run(accury, feed_dict={x_: x_test, y_: y_test, batch: 30}))
->>>>>>> be2a06a3d9cf015770d75d6ad6fca968186d6e93
+
 
 
 
