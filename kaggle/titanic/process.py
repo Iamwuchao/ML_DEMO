@@ -2,7 +2,22 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction import DictVectorizer
-from titanic.process_data import *
+#from titanic.process_data import *
+from tensorflow.python import debug as tf_debug
+import pandas as pd
+
+train_file = "train.csv"
+test_file = "test.csv"
+
+feature_list = ['Survived','Pclass','Sex','Age','SibSp','Parch','Fare','Cabin','Embarked']
+
+def process_data(file):
+    df = pd.read_csv(file)
+    #print(df.shape)
+    feature_df = df.loc[:,feature_list]
+    #print(feature_df.shape)
+    return feature_df
+
 
 X_feature = ['Pclass','Sex','Age','SibSp','Parch','Fare','Cabin','Embarked']
 learning_rate = 0.01
@@ -73,6 +88,7 @@ init = tf.global_variables_initializer()
 
 with tf.Session() as sess:
     sess.run(init)
+    sess = tf_debug.LocalCLIDebugWrapperSession(sess)
     for epoch in range(10):
         sess.run(optimizer, feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30})
     print(sess.run(cost,feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30}))
