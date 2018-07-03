@@ -31,30 +31,26 @@ display_step = 50
 n=159  #X的长度
 k=10  #FM 的超参
 
-data1 = process_data(train_file)
-
-data2 = process_data(test_file)
-
-data = np.concatenate((data1,data2),axis=0)
+data = process_data(train_file)
 
 X = data.loc[:,X_feature]
 print(X.shape)
-X_list = []
-for index,row in X.iterrows():
-    new_dict_row = {}
-    for key in X_feature:
-        new_dict_row[key] = row[key]
-    X_list.append(new_dict_row)
-
-v = DictVectorizer()
-print(len(X_list))
-X_onehot =v.fit_transform(X_list).toarray()
-where_are_nan = np.isnan(X_onehot)
-X_onehot[where_are_nan] = 0
+# X_list = []
+# for index,row in X.iterrows():
+#     new_dict_row = {}
+#     for key in X_feature:
+#         new_dict_row[key] = row[key]
+#     X_list.append(new_dict_row)
+#
+# v = DictVectorizer()
+# print(len(X_list))
+# X_onehot =v.fit_transform(X_list).toarray()
+where_are_nan = np.isnan(X)
+X[where_are_nan] = 0
 print("train_X_onehot")
-print(type(X_onehot))
-train_X_onehot = np.array(X_onehot)
-print(X_onehot.shape)
+print(type(X))
+train_X = np.array(X)
+print(X.shape)
 
 train_Y = data.loc[:,['Survived']].values
 
@@ -69,7 +65,7 @@ print(train_Y.shape)
 #     print(sess.run(cost,feed_dict={x_: train_X_onehot, y_: train_Y,batch: 30}))
 #     #print(sess.run(accury, feed_dict={x_: x_test, y_: y_test, batch: 30}))
 
-dtrain = xgb.DMatrix(data=train_X_onehot,label=train_Y)
+dtrain = xgb.DMatrix(data=train_X,label=train_Y)
 
 params={'booster':'gbtree',
 	    'objective': 'binary:logistic',
@@ -90,7 +86,7 @@ params={'booster':'gbtree',
 
 num_round = 200
 bst = xgb.train(params, dtrain, num_boost_round=2000)
-preds = bst.predict(xgb.DMatrix(train_X_onehot))
+preds = bst.predict(xgb.DMatrix(train_X))
 print(type(preds))
 
 for p in preds:
