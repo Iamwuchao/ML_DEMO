@@ -80,8 +80,8 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction,"float"))
 x_train,y_train = read_train_data(train_file)
 # print(x_train)
 #mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
-# saver = tf.train.Saver()
-# with tf.Session() as sess:
+saver = tf.train.Saver(max_to_keep=1)
+with tf.Session() as sess:
     # sess.run(tf.global_variables_initializer())
     # for i in range(20000):
     #     batch = mnist.train.next_batch(50)
@@ -102,50 +102,53 @@ x_train,y_train = read_train_data(train_file)
     #             x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
     # sess = tfdbg.LocalCLIDebugWrapperSession(sess)
     # sess.add_tensor_filter("has_inf_or_nan", tfdbg.has_inf_or_nan)
-    # sess.run(tf.global_variables_initializer())
-    # x_train,y_train = read_train_data(train_file)
-    # start = 0
-    # end = 50
-    # for i in range(20000):
-        #print("start end "+str(start)+" %% "+str(end)+" &&& "+str(x_train.shape[0]))
-    #     batch_x = x_train[start:end]
-    #     batch_y = y_train[start:end]
-    #     batch_x = batch_x.astype(np.float64)
-    #     # print("type")
-    #     # print(type(batch_x))
-    #     # print(batch_x.shape)
-    #     # print(type(batch_y))
-    #     # print(batch_y.shape)
-    #     # print(batch_y.dtype)
-    #     # print(batch_x.dtype)
-    #     start+=50
-    #     end+=50
-    #     if(end>x_train.shape[0]):
-    #         end = 50
-    #         start = 0
-    #     sess.run(train_step, feed_dict={x: batch_x, y_: batch_y, keep_prob: 0.5})
-    #     if(i%100==0):
-    #         cross_entropy_value = sess.run(cross_entropy,feed_dict={x: batch_x, y_: batch_y, keep_prob: 1.0})
-    #         print("cross_entropy "+str(cross_entropy_value))
-    #         print("test accuracy %g" % accuracy.eval(feed_dict={x: x_train[0:1000].astype(np.float64), y_:y_train[0:1000], keep_prob: 1.0}))
-    # saver.save(sess,"./model/"+"CNN_model.ckpt")
-    # x_test = read_test_data(test_file)
-    # print("predict")
-    # result = sess.run(predict,feed_dict={x:x_test.astype(np.float64),y_:y_train,keep_prob:1.0})
-    # index_image = np.arange(start=1,stop=result.shape[0])
-    # submission = pd.DataFrame({"ImageId":index_image, "Label":result })
-    # submission.to_csv("digitRecognizer_submission.csv", index=False)
-    #
-with tf.Session() as sess:
-    new_saver = tf.train.import_meta_graph("./model/CNN_model.ckpt.meta")
-    new_saver.restore(sess,tf.train.latest_checkpoint("./model"))
-    #predict = sess.graph.get_operation_by_name("predict")
     sess.run(tf.global_variables_initializer())
+    x_train,y_train = read_train_data(train_file)
+    start = 0
+    end = 50
+    for i in range(20000):
+        #print("start end "+str(start)+" %% "+str(end)+" &&& "+str(x_train.shape[0]))
+        batch_x = x_train[start:end]
+        batch_y = y_train[start:end]
+        batch_x = batch_x.astype(np.float64)
+        # print("type")
+        # print(type(batch_x))
+        # print(batch_x.shape)
+        # print(type(batch_y))
+        # print(batch_y.shape)
+        # print(batch_y.dtype)
+        # print(batch_x.dtype)
+        start+=50
+        end+=50
+        if(end>x_train.shape[0]):
+            end = 50
+            start = 0
+        sess.run(train_step, feed_dict={x: batch_x, y_: batch_y, keep_prob: 0.5})
+        if(i%100==0):
+            cross_entropy_value = sess.run(cross_entropy,feed_dict={x: batch_x, y_: batch_y, keep_prob: 1.0})
+            print("cross_entropy "+str(cross_entropy_value))
+            #print("test accuracy %g" % accuracy.eval(feed_dict={x: x_train[0:1000].astype(np.float64), y_:y_train[0:1000], keep_prob: 1.0}))
+    saver.save(sess,"./model/"+"CNN_model.ckpt")
     x_test = read_test_data(test_file)
-    print(x_test.shape[0])
+    print("predict")
     result = sess.run(predict,feed_dict={x:x_test.astype(np.float64),y_:y_train,keep_prob:1.0})
-    index_image = np.arange(start=1, stop=result.shape[0]+1)
-    submission = pd.DataFrame({"ImageId": index_image, "Label": result})
+    index_image = np.arange(start=1,stop=result.shape[0]+1)
+    submission = pd.DataFrame({"ImageId":index_image, "Label":result })
+    submission.to_csv("digitRecognizer_submission.csv", index=False)
+    #
+# with tf.Session() as sess:
+#     new_saver = tf.train.import_meta_graph("./model/CNN_model.ckpt.meta")
+#     new_saver.restore(sess,tf.train.latest_checkpoint('./model'))
+#     predict1 = sess.graph.get_tensor_by_name("predict:0")
+#     #correct_prediction = sess.graph.get_operation_by_name("correct_prediction")
+#     sess.run(tf.global_variables_initializer())
+#     x_test = read_test_data(test_file)
+#     print(x_test.shape[0])
+#     result = sess.run(predict1,feed_dict={x:x_train[0:1000].astype(np.float64),y_:y_train[0:1000],keep_prob:1.0})
+#     print(result)
+    # index_image = np.arange(start=1, stop=result.shape[0]+1)
+    # submission = pd.DataFrame({"ImageId": index_image, "Label": result})
+    # submission.to_csv("digitRecognizer_submission.csv", index=False)
 
 
 #index_image = np.arange(start=1,stop=result.shape[0])
