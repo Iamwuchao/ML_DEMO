@@ -37,7 +37,7 @@ def max_pool_2x2(x):
     return tf.nn.max_pool(x,ksize=[1,2,2,1],strides=[1,2,2,1],padding='SAME')
 
 
-
+training = tf.placeholder(tf.bool)
 x = tf.placeholder("float",shape=[None,784],name='x')
 y_ = tf.placeholder("float",shape=[None,10],name='y_')
 
@@ -46,15 +46,23 @@ x_image = tf.reshape(x,[-1,28,28,1],name="x_image")
 W_conv1 = weight_variable([5,5,1,32])
 b_conv1 = bias_variable([32])
 
-h_conv1 = tf.nn.relu(conv2d(x_image,W_conv1)+b_conv1,name='h_conv1')
+h_conv1_tem = tf.add(conv2d(x_image,W_conv1),b_conv1)
+h_conv1_bn = tf.layers.batch_normalization(inputs=h_conv1_tem,training=training,name="h_conv1_bn")
+
+h_conv1 = tf.nn.relu(h_conv1_bn,name='h_conv1')
+
+
 h_pool1 = max_pool_2x2(h_conv1)
 
 W_conv2 = weight_variable([5,5,32,64])
 b_conv2 = bias_variable([64])
 
-h_conv2 = tf.nn.relu(conv2d(h_pool1,W_conv2)+b_conv2,name='h_conv2')
-h_pool2 = max_pool_2x2(h_conv2)
+h_conv2_bn_tem = tf.add(conv2d(h_pool1,W_conv2),b_conv2)
+h_conv2_bn= tf.layers.batch_normalization(inputs=h_conv2_bn_tem,training=training,name="h_conv2_bn")
 
+h_conv2 = tf.nn.relu(h_conv2_bn,name='h_conv2')
+
+h_pool2 = max_pool_2x2(h_conv2)
 
 W_fc1 = weight_variable([7 * 7 * 64, 1024])
 b_fc1 = bias_variable([1024])
@@ -78,8 +86,6 @@ correct_prediction = tf.equal(tf.argmax(y_conv,1),tf.argmax(y_,1),name="correct_
 accuracy = tf.reduce_mean(tf.cast(correct_prediction,"float"))
 
 x_train,y_train = read_train_data(train_file)
-# print(x_train)
-#mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 saver = tf.train.Saver(max_to_keep=1)
 with tf.Session() as sess:
     # sess.run(tf.global_variables_initializer())
@@ -102,50 +108,52 @@ with tf.Session() as sess:
     #             x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
     # sess = tfdbg.LocalCLIDebugWrapperSession(sess)
     # sess.add_tensor_filter("has_inf_or_nan", tfdbg.has_inf_or_nan)
+
     sess.run(tf.global_variables_initializer())
     x_train,y_train = read_train_data(train_file)
     start = 0
     end = 50
     for i in range(20000):
-        #print("start end "+str(start)+" %% "+str(end)+" &&& "+str(x_train.shape[0]))
         batch_x = x_train[start:end]
         batch_y = y_train[start:end]
         batch_x = batch_x.astype(np.float64)
-        # print("type")
-        # print(type(batch_x))
-        # print(batch_x.shape)
-        # print(type(batch_y))
-        # print(batch_y.shape)
-        # print(batch_y.dtype)
-        # print(batch_x.dtype)
         start+=50
         end+=50
         if(end>x_train.shape[0]):
             end = 50
             start = 0
-        sess.run(train_step, feed_dict={x: batch_x, y_: batch_y, keep_prob: 0.5})
+        sess.run(train_step, feed_dict={x: batch_x, y_: batch_y, keep_prob: 0.5,training:True})
         if(i%100==0):
-            cross_entropy_value = sess.run(cross_entropy,feed_dict={x: batch_x, y_: batch_y, keep_prob: 1.0})
+            cross_entropy_value = sess.run(cross_entropy,feed_dict={x: batch_x, y_: batch_y, keep_prob: 1.0,training:True})
             print("cross_entropy "+str(cross_entropy_value))
             #print("test accuracy %g" % accuracy.eval(feed_dict={x: x_train[0:1000].astype(np.float64), y_:y_train[0:1000], keep_prob: 1.0}))
-    saver.save(sess,"./model/"+"CNN_model.ckpt")
+    # w_c2 = sess.run(W_conv2,feed_dict={x: x_train[0:1000].astype(np.float64), y_:y_train[0:1000], keep_prob: 1.0})
+    # print(w_c2)
+    saver.save(sess,"./model_bn_before/"+"CNN_model_bn.ckpt")
+    # result = sess.run(predict,feed_dict={x: x_train[0:1000].astype(np.float64), y_:y_train[0:1000], keep_prob: 1.0})
+    # print(result)
+
     x_test = read_test_data(test_file)
     print("predict")
-    result = sess.run(predict,feed_dict={x:x_test.astype(np.float64),y_:y_train,keep_prob:1.0})
+    result = sess.run(predict,feed_dict={x:x_test.astype(np.float64),y_:y_train,keep_prob:1.0,training:False})
     index_image = np.arange(start=1,stop=result.shape[0]+1)
     submission = pd.DataFrame({"ImageId":index_image, "Label":result })
-    submission.to_csv("digitRecognizer_submission.csv", index=False)
-    #
+    submission.to_csv("digitRecognizer_bn_submission_before.csv", index=False)
+
 # with tf.Session() as sess:
-#     new_saver = tf.train.import_meta_graph("./model/CNN_model.ckpt.meta")
-#     new_saver.restore(sess,tf.train.latest_checkpoint('./model'))
-#     predict1 = sess.graph.get_tensor_by_name("predict:0")
-#     #correct_prediction = sess.graph.get_operation_by_name("correct_prediction")
-#     sess.run(tf.global_variables_initializer())
-#     x_test = read_test_data(test_file)
-#     print(x_test.shape[0])
-#     result = sess.run(predict1,feed_dict={x:x_train[0:1000].astype(np.float64),y_:y_train[0:1000],keep_prob:1.0})
+#     # new_saver = tf.train.import_meta_graph("./model/CNN_model.ckpt.meta")
+#     # new_saver.restore(sess,tf.train.latest_checkpoint('./model'))
+#     new_saver = tf.train.Saver()
+#     new_saver.restore(sess,"./model/"+"CNN_model.ckpt")
+#     #predict1 = sess.graph.get_tensor_by_name("predict:0")
+#     # correct_prediction = sess.graph.get_operation_by_name("correct_prediction")
+#     #sess.run(tf.global_variables_initializer())
+#     # x_test = read_test_data(test_file)
+#     # print(x_test.shape[0])
+#     result = sess.run(predict,feed_dict={x:x_train[0:1000].astype(np.float64),y_:y_train[0:1000],keep_prob:1.0})
 #     print(result)
+#     print("##########")
+#     print(np.argmax(y_train[0:1000],1))
     # index_image = np.arange(start=1, stop=result.shape[0]+1)
     # submission = pd.DataFrame({"ImageId": index_image, "Label": result})
     # submission.to_csv("digitRecognizer_submission.csv", index=False)
